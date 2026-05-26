@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── tile animations ─────────────────────────────── */
+@keyframes tile-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@keyframes tile-flip {
+  0%   { transform: rotateX(0deg); }
+  45%  { transform: rotateX(-90deg); }
+  55%  { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+@keyframes tile-shake {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-5px); }
+  30%, 60%, 90% { transform: translateX(5px); }
+}
+
+@keyframes tile-bounce {
+  0%, 100% { transform: translateY(0); }
+  30%       { transform: translateY(-20px); }
+  55%       { transform: translateY(-6px); }
+  75%       { transform: translateY(-12px); }
+  90%       { transform: translateY(-2px); }
+}
+
+.tile-pop   { animation: tile-pop   0.1s ease; }
+.tile-flip  { animation: tile-flip  0.45s ease; }
+.tile-shake { animation: tile-shake 0.5s ease; }
+.tile-bounce{ animation: tile-bounce 0.6s ease; }
+
+/* ── base ────────────────────────────────────────── */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overscroll-behavior: none;
+}
