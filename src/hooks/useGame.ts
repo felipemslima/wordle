@@ -1,6 +1,5 @@
 import { useReducer, useCallback } from 'react'
 import type { GameMode, GameState, BoardState, TileData, KeyStatus } from '../types'
-// GameState now includes all animation/cursor fields
 import { MODE_CONFIG } from '../types'
 import { evaluate, mergePriority } from '../utils/evaluate'
 import { ANSWERS, VALID_WORDS } from '../data/words'
@@ -18,7 +17,7 @@ function pickSecrets(count: number): string[] {
 }
 
 function emptyBoard(): BoardState {
-  return { rows: [], solved: false }
+  return { rows: [], solved: false, solvedAtRow: -1 }
 }
 
 function buildKeyStatuses(boards: BoardState[]): Record<string, KeyStatus> {
@@ -73,7 +72,6 @@ function reducer(state: GameState, action: Action): GameState {
       if (state.gameOver || state.revealRow >= 0) return state
       const input = [...state.currentInput]
       input[state.selectedCol] = action.letter
-      // advance cursor: next empty slot, or next slot, or wrap
       let next = state.selectedCol
       const nextEmpty = input.findIndex((l, i) => i > state.selectedCol && l === '')
       if (nextEmpty !== -1) next = nextEmpty
@@ -91,7 +89,6 @@ function reducer(state: GameState, action: Action): GameState {
         input[state.selectedCol] = ''
         return { ...state, currentInput: input }
       }
-      // cursor on empty → go to previous filled
       for (let i = state.selectedCol - 1; i >= 0; i--) {
         if (input[i] !== '') {
           input[i] = ''
@@ -114,8 +111,10 @@ function reducer(state: GameState, action: Action): GameState {
     case 'COMMIT_REVEAL': {
       const newBoards = state.boards.map((board, bi) => {
         const row = action.tiles[bi]
-        const solved = board.solved || row.every(t => t.status === 'correct')
-        return { rows: [...board.rows, row], solved }
+        const justSolved = !board.solved && row.every(t => t.status === 'correct')
+        const solved = board.solved || justSolved
+        const solvedAtRow = justSolved ? state.currentRow : board.solvedAtRow
+        return { rows: [...board.rows, row], solved, solvedAtRow }
       })
       const allSolved = newBoards.every(b => b.solved)
       const nextRow = state.currentRow + 1
@@ -173,7 +172,6 @@ export function useGame(initialMode: GameMode = 'classic') {
       dispatch({ type: 'SUBMIT', result: null })
       return { error: 'invalid' as const }
     }
-    // evaluate against all secrets
     const tiles: TileData[][] = state.secrets.map(secret =>
       evaluate(guess, secret).map((status, i) => ({ letter: guess[i], status }))
     )

@@ -10,6 +10,7 @@ export interface TileData {
 export interface BoardState {
   rows: TileData[][]
   solved: boolean
+  solvedAtRow: number  // -1 while unsolved; set to currentRow when solved
 }
 
 export interface GameState {

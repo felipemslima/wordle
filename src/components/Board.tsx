@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Tile } from './Tile'
 import type { TileData, TileStatus } from '../types'
 
@@ -10,7 +11,8 @@ interface Props {
   currentRow: number
   maxRows: number
   solved: boolean
-  revealingRow: number   // -1 = none, N = revealing row N
+  solvedAtRow: number
+  revealingRow: number
   shakeActive: boolean
   bounceActive: boolean
   selectedCol: number
@@ -26,20 +28,39 @@ const SIZE: Record<number, { w: string; h: string; text: string; gap: string }> 
 }
 
 export function Board({
-  rows, currentInput, currentRow, maxRows, solved,
+  rows, currentInput, currentRow, maxRows, solved, solvedAtRow,
   revealingRow, shakeActive, bounceActive,
   selectedCol, onSelectCol, boardCount = 1,
 }: Props) {
   const sz = SIZE[boardCount] ?? SIZE[1]
 
+  // Per-board bounce: fires when this board's solved flips from false → true
+  const prevSolved = useRef(solved)
+  const [localBounce, setLocalBounce] = useState(false)
+  const [boardFlash, setBoardFlash] = useState(false)
+
+  useEffect(() => {
+    if (!prevSolved.current && solved) {
+      setLocalBounce(true)
+      setBoardFlash(true)
+      const t1 = setTimeout(() => setLocalBounce(false), 100 + 4 * 80 + 700)
+      const t2 = setTimeout(() => setBoardFlash(false), 900)
+      return () => { clearTimeout(t1); clearTimeout(t2) }
+    }
+    prevSolved.current = solved
+  }, [solved])
+
+  const effectiveBounce = localBounce || bounceActive
+
   return (
     <div
-      className={`grid ${sz.gap}`}
+      className={`grid ${sz.gap}${boardFlash ? ' board-flash' : ''}`}
       style={{
         gridTemplateRows: `repeat(${maxRows}, 1fr)`,
         gridTemplateColumns: 'repeat(5, 1fr)',
         width: sz.w,
         height: sz.h,
+        borderRadius: '4px',
       }}
     >
       {Array.from({ length: maxRows }, (_, row) => {
@@ -59,17 +80,15 @@ export function Board({
             status = letter ? 'tbd' : 'empty'
           }
 
-          const lastSolvedRow = solved ? rows.length - 1 : -1
-
           return (
             <div key={col} className={`${sz.text} w-full h-full`}>
               <Tile
                 letter={letter}
                 status={status}
                 reveal={isRevealing}
-                revealDelay={isRevealing ? col * STAGGER_MS : bounceActive && row === lastSolvedRow ? col * 80 : 0}
+                revealDelay={isRevealing ? col * STAGGER_MS : effectiveBounce && row === solvedAtRow ? col * 80 : 0}
                 shake={shakeActive && isActive}
-                bounce={bounceActive && row === lastSolvedRow}
+                bounce={effectiveBounce && row === solvedAtRow}
                 selected={isActive && selectedCol === col}
                 active={isActive}
                 onClick={isActive ? () => onSelectCol(col) : undefined}

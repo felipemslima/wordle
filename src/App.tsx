@@ -3,6 +3,7 @@ import { Header } from './components/Header'
 import { Board, FLIP_MS, STAGGER_MS } from './components/Board'
 import { Keyboard } from './components/Keyboard'
 import { Toast } from './components/Toast'
+import { Confetti } from './components/Confetti'
 import { HelpModal } from './components/modals/HelpModal'
 import { StatsModal } from './components/modals/StatsModal'
 import { ResultModal } from './components/modals/ResultModal'
@@ -36,6 +37,7 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [showResult, setShowResult] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
 
   const { state, addLetter, removeLetter, selectCol, submitGuess, commitReveal, clearAnimate, newGame } = useGame(mode)
   const { stats, recordResult, refreshStats } = useStats(mode)
@@ -57,7 +59,6 @@ export default function App() {
     }, totalFlip)
   }, [submitGuess, commitReveal, showToast])
 
-  // Physical keyboard — handleSubmit in deps to avoid stale closure
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.altKey || e.metaKey) return
@@ -72,14 +73,12 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [showHelp, showStats, showResult, handleSubmit, addLetter, removeLetter])
 
-  // Handle key press from virtual keyboard
   const handleKey = useCallback((key: string) => {
     if (key === 'ENTER') handleSubmit()
     else if (key === '⌫') removeLetter()
     else addLetter(key)
   }, [handleSubmit, removeLetter, addLetter])
 
-  // After commit: check game over
   useEffect(() => {
     if (!state.gameOver) return
     const delay = state.won ? (5 - 1) * 80 + 600 + 200 : 400
@@ -87,11 +86,14 @@ export default function App() {
       recordResult(state.won, state.currentRow)
       refreshStats()
       setShowResult(true)
+      if (state.won) {
+        setShowConfetti(true)
+        setTimeout(() => setShowConfetti(false), 3500)
+      }
     }, delay)
     return () => clearTimeout(t)
   }, [state.gameOver])
 
-  // Clear shake/bounce
   useEffect(() => {
     if (!state.shakeRow && !state.bounceRow) return
     const t = setTimeout(clearAnimate, 600)
@@ -101,11 +103,13 @@ export default function App() {
   const handleModeChange = (m: GameMode) => {
     setMode(m)
     setShowResult(false)
+    setShowConfetti(false)
     newGame(m)
   }
 
   const handleNewGame = () => {
     setShowResult(false)
+    setShowConfetti(false)
     newGame(mode)
   }
 
@@ -123,6 +127,7 @@ export default function App() {
       />
 
       <Toast message={toast} />
+      <Confetti active={showConfetti} />
 
       <main className="flex-1 flex flex-col items-center justify-between py-4 gap-4">
         {/* Boards */}
@@ -145,6 +150,7 @@ export default function App() {
                 currentRow={state.currentRow}
                 maxRows={state.maxRows}
                 solved={board.solved}
+                solvedAtRow={board.solvedAtRow}
                 revealingRow={state.revealRow}
                 shakeActive={state.shakeRow}
                 bounceActive={state.bounceRow}

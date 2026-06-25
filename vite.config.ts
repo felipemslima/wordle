@@ -4,4 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  base: '/wordle/',
+  server: { port: 3002 },
+  preview: { port: 3002 },
 })
