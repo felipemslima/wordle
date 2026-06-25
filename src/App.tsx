@@ -64,8 +64,8 @@ export default function App() {
       if (e.ctrlKey || e.altKey || e.metaKey) return
       if (showHelp || showStats || showResult) return
       const raw = e.key.toUpperCase()
-      if (raw === 'ENTER') { handleSubmit(); return }
-      if (raw === 'BACKSPACE') { removeLetter(); return }
+      if (raw === 'ENTER') { e.preventDefault(); handleSubmit(); return }
+      if (raw === 'BACKSPACE') { e.preventDefault(); removeLetter(); return }
       const ch = ACCENT_MAP[raw] ?? raw
       if (/^[A-Z]$/.test(ch)) addLetter(ch)
     }

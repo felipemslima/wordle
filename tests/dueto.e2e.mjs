@@ -163,6 +163,37 @@ async function run() {
       pass('third guess: 3 rows accumulated')
     } catch (e) { fail('third guess', e) }
 
+    // ── 4b. REGRESSÃO: Enter não reseta o jogo quando botão Dueto está focado ──
+    // Bug original: clicar "Dueto" foca o botão; pressionar Enter para submeter
+    // chute disparava click no botão focado → newGame() → jogo resetava
+
+    try {
+      // reload para estado limpo
+      await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded' })
+      await waitForApp(page)
+
+      // clica Dueto (botão fica focado)
+      await page.click('button ::-p-text(Dueto)')
+      await new Promise(r => setTimeout(r, 300))
+
+      // tipo palavra via teclado físico (não clickKey) + Enter físico
+      await page.keyboard.type('CARRO', { delay: 80 })
+      await page.keyboard.press('Enter')
+      await waitFlip()
+
+      const r0 = await countRevealedRows(page, 0)
+      if (r0 !== 1) throw new Error(`board[0] tem ${r0} linhas — Enter provavelmente resetou o jogo (esperava 1)`)
+
+      // segundo chute com Enter físico
+      await page.keyboard.type('CAMPO', { delay: 80 })
+      await page.keyboard.press('Enter')
+      await waitFlip()
+
+      const r0b = await countRevealedRows(page, 0)
+      if (r0b !== 2) throw new Error(`board[0] tem ${r0b} linhas após 2º chute — esperava 2 (bug: 1º some)`)
+      pass('regressão Enter-foco: 2 chutes via teclado físico preservam linhas')
+    } catch (e) { fail('regressão Enter-foco (BUG PRINCIPAL)', e) }
+
     // ── 5. switch to Quarteto ───────────────────────────────────────────
 
     try {
